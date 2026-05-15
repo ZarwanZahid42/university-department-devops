@@ -1,4 +1,4 @@
-name: CI Pipeline
+name: CI/CD Pipeline
 
 on:
   push:
@@ -9,24 +9,48 @@ on:
 
 jobs:
 
-  validate-and-build:
+  build:
     runs-on: ubuntu-latest
 
     steps:
-
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Check HTML Files
-        run: |
-          echo "Checking HTML files..."
-          find . -name "*.html"
+      - name: Validate HTML Files
+        run: find . -name "*.html"
 
-      - name: Check CSS Files
-        run: |
-          echo "Checking CSS files..."
-          find . -name "*.css"
+      - name: Validate CSS Files
+        run: find . -name "*.css"
 
       - name: Build Docker Image
-        run: |
-          docker build -t university-department-site .
+        run: docker build -t university-department-site .
+
+  deploy-development:
+    if: github.ref == 'refs/heads/develop'
+    needs: build
+    environment: development
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Deploy to Render Development
+        run: curl ${{ secrets.RENDER_DEPLOY_HOOK }}
+
+  deploy-staging:
+    if: github.ref == 'refs/heads/staging'
+    needs: build
+    environment: staging
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Deploy to Render Staging
+        run: curl ${{ secrets.RENDER_DEPLOY_HOOK }}
+
+  deploy-production:
+    if: github.ref == 'refs/heads/main'
+    needs: build
+    environment: production
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Deploy to Render Production
+        run: curl ${{ secrets.RENDER_DEPLOY_HOOK }}
